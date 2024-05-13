@@ -81,14 +81,6 @@ def parse_args():
     return args
 
 
-def read_image_to_torch(path):
-    input_image = Image.open(path).convert('RGB')
-    input_image = np.asarray(input_image).astype('float64').transpose(2, 0, 1)
-    input_image = torch.from_numpy(input_image).type(torch.FloatTensor)
-    input_image = input_image.unsqueeze(0) / 255
-    return input_image
-
-
 def save_torch_image(img, save_path):
     img = img.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
     img = np.clip(np.rint(img * 255), 0, 255).astype(np.uint8)
@@ -104,31 +96,6 @@ def save_torch_mv(mv, save_path):
     mv = flow_to_image(mv)
     mv = mv.astype(np.uint8)
     Image.fromarray(mv).save(save_path)
-
-
-def save_torch_context(context1, context2, context3, ref_feature1, ref_feature2, ref_feature3, save_path):
-    prefix = ['context1', 'context2', 'context3', 'ref_feature1', 'ref_feature2', 'ref_feature3']
-    feature_list = [context1, context2, context3, ref_feature1, ref_feature2, ref_feature3]
-    for p in range(len(feature_list)):
-        context_path = os.path.join(save_path, prefix[p])
-        os.makedirs(context_path, exist_ok=True)
-        _, C, _, _ = context1.size()
-        for i in range(C):
-            curr_out_path = os.path.join(save_path, prefix[p], f'{i}.png')
-            feature = feature_list[p]
-            curr_feature = feature[0, i, :, :].cpu().numpy()
-            min_to_vis = np.percentile(curr_feature, 3)
-            max_to_vis = np.percentile(curr_feature, 97)
-            if max_to_vis - min_to_vis < 0.01:
-                print(f"{prefix} too close min {min_to_vis} and max {max_to_vis} value for channel {i}, skipped")
-                continue
-            print(f"{prefix}, {i}, min: {min_to_vis}, max: {max_to_vis}")
-            curr_feature = np.clip(curr_feature, min_to_vis, max_to_vis)
-            curr_feature = (curr_feature - min_to_vis) / (max_to_vis - min_to_vis)
-            curr_feature = curr_feature * 255
-            curr_feature = curr_feature.astype(np.uint8)
-            img = Image.fromarray(curr_feature, 'L')
-            img.save(curr_out_path)
 
 
 def np_image_to_tensor(img):

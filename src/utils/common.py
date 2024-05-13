@@ -54,6 +54,7 @@ def get_interlayer_padding(H_HR, W_HR, ratio):
             new_H_HR = tmp_H
             break
         i += 1
+    i = 0
     while True:
         p = 64 + 32 * i
         tmp_W = (W_HR + p - 1) // p * p
@@ -85,5 +86,5 @@ def get_interlayer_padding(H_HR, W_HR, ratio):
             'LR_size': (H_LR, W_LR), 'HR_size': (H_HR, W_HR)}
 
 
-def inverse_padding_size(p_size:tuple):
+def inverse_padding_size(p_size: tuple):
     return (-p_size[0], -p_size[1], -p_size[2], -p_size[3])
