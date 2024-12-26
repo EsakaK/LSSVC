@@ -2,6 +2,10 @@
 
 Official Pytorch implementation for [LSSVC: A Learned Spatially Scalable Video Coding Scheme ](https://ieeexplore.ieee.org/document/10521480)
 
+### News :loudspeaker:
+- We have added evaluation w/o real bitstream writing!
+
+
 ### Prerequisites
 - Python 3.6
 - CUDA if want to use GPU for acceleration
@@ -12,8 +16,10 @@ Official Pytorch implementation for [LSSVC: A Learned Spatially Scalable Video C
 - bd-metric==0.9.0
 
 ### Build the project
-We only provide the test script with real bitstream writing. Please build the C++ code to test with actual bitstream writing. 
+We provide the test script with real bitstream writing. Please build the C++ code to test with real bitstream writing. 
 
+
+Set the `--write_stream 1` to make real coding. There is little difference between the real bitrates and estimated bitrates.
 #### On Linux
 ```bash
 sudo apt-get install cmake g++
@@ -24,7 +30,6 @@ conda activate $YOUR_PY36_ENV_NAME
 cmake ../cpp -DCMAKE_BUILD_TYPE=Release
 make -j
 ```
-
 
 ### Comparing with other method
 - RD curve with intra period 12
