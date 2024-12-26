@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument("--inter_feature_rdo_iter_to_reduce", type=int, default=20)
 
     parser.add_argument('--test_config', type=str, required=True)
-    parser.add_argument("--worker", "-w", type=int, default=1, help="worker number")
+    parser.add_argument("--worker", "-w", type=int, default=0, help="worker number")
     parser.add_argument("--cuda", type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument("--cuda_device", default=None,
                         help="the cuda device used, e.g., 0; 0,1; 1,2,3; etc.")
@@ -691,7 +691,7 @@ def main():
         args.model_path = args.i_frame_model_path
     count_frames = 0
     count_sequences = 0
-    ratio_list = ["x2"]
+    ratio_list = ["x2", "x1_5"]
     for ds_name in config:
         if config[ds_name]['test'] == 0:
             continue

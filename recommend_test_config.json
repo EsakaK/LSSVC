@@ -1,7 +1,7 @@
 {
   "HEVC_B": {
     "test": 1,
-    "base_path": "/data/EsakaK/Scalable_YUV/ClassB/",
+    "base_path": "/data/EsakaK/Scalable_YUV/HEVC_B/",
     "chroma": "yuv420", "bit_depth": 8,
     "x1":   {"width":1920, "height":1080},
     "x2":   {"width":960, "height":540},
@@ -18,7 +18,7 @@
   },
   "HEVC_C": {
     "test": 1,
-    "base_path": "/data/EsakaK/Scalable_YUV/ClassC/",
+    "base_path": "/data/EsakaK/Scalable_YUV/HEVC_C/",
     "chroma": "yuv420", "bit_depth": 8,
     "x1":   {"width":832, "height":480},
     "x2":   {"width":416, "height":240},
@@ -34,7 +34,7 @@
   },
   "HEVC_E": {
     "test": 1,
-    "base_path": "/data/EsakaK/Scalable_YUV/ClassE/",
+    "base_path": "/data/EsakaK/Scalable_YUV/HEVC_E/",
     "chroma": "yuv420", "bit_depth": 8,
     "x1":   {"width":1280, "height":720},
     "x2":   {"width":640, "height":360},
@@ -51,7 +51,7 @@
     }
   },
   "MCL-JCV": {
-    "test": 0,
+    "test": 1,
     "base_path": "/data/EsakaK/Scalable_YUV/MCL-JCV",
     "chroma": "yuv420", "bit_depth": 8,
    "x1":   {"width":1920, "height":1080},
@@ -93,7 +93,7 @@
     }
   },
   "UVG": {
-    "test": 0,
+    "test": 1,
     "base_path": "/data/EsakaK/Scalable_YUV/UVG",
     "chroma": "yuv420", "bit_depth": 8,
     "x1":   {"width":1920, "height":1080},

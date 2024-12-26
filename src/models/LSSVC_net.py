@@ -177,7 +177,12 @@ class LSSVC(nn.Module):
             return self.encode_decode_extend(x_bl, x_el, dpb,
                                              output_path_bl, output_path_el,
                                              pic_width, pic_height, pic_width_bl, pic_height_bl)
-        return None
+        ref_frame_bl = dpb['ref_frame_bl']
+        ref_feature_bl = dpb['ref_feature_bl']
+        ref_frame_el = dpb['ref_frame_el']
+        ref_feature_el = dpb['ref_feature_el']
+        result = self.forward_one_frame(x_bl, x_el, ref_frame_bl, ref_frame_el, ref_feature_bl, ref_feature_el)
+        return result
 
     def quant(self, x, force_detach=False):
         if self.training or force_detach:
@@ -436,3 +441,88 @@ class LSSVC(nn.Module):
             return y_q_w_0, y_q_w_1, y_q_w_2, y_q_w_3, \
                 scales_w_0, scales_w_1, scales_w_2, scales_w_3, y_hat
         return y_res, y_q, y_hat, scales_hat
+
+    def forward_one_frame(self, x_bl, x_el, ref_frame_bl, ref_frame_el, ref_feature_bl, ref_feature_el):
+        # BL forward
+        bl_result = self.base_layer_model.get_inter_layer_information(x_bl, ref_frame_bl, ref_feature_bl)
+        feature_bl = bl_result['feature']
+        mv_bl_hat = bl_result['mv_hat']
+        y_bl_hat = bl_result['y_hat']
+        bits_bl = bl_result['bits']
+
+        # ILP(Inter Layer Process frame)
+        texture = self.get_depadded_feature(feature_bl)  # texture resample
+        mv_bl_hat = self.get_depadded_feature(mv_bl_hat)  # motion resample
+        y_bl_hat = self.get_depadded_feature(y_bl_hat, p=16)
+
+        # EL forward
+        mv_upsample = self.motion_resampling(mv_bl_hat)
+        mv_ctx_prior = self.mv_ctx_prior_encoder(mv_upsample)
+        mv_ctx = self.mv_ctx_transform(mv_upsample)
+
+        mv = self.optic_flow(x_el, ref_frame_el)
+        mv_y = self.mv_encoder(mv, mv_ctx)
+        mv_z = self.mv_prior_encoder(mv_y)
+        mv_z_hat = self.quant(mv_z)
+        mv_hyper_prior = self.mv_prior_decoder(mv_z_hat)
+        mv_params = self.mv_prior_fusion(torch.cat([mv_hyper_prior, mv_ctx_prior], dim=1))
+        mv_scales_hat, mv_means_hat = mv_params.chunk(2, 1)
+
+        mv_y_res = mv_y - mv_means_hat
+        mv_y_q = self.quant(mv_y_res)
+        mv_y_hat = mv_y_q + mv_means_hat
+
+        mv_hat = self.mv_decoder(mv_y_hat, mv_ctx)
+
+        # context mining
+        context1, context2, context3, warp_frame, _ = self.hybrid_temporal_layer_context_fusion(texture, mv_hat, ref_frame_el, ref_feature_el)
+        # res encode-decode
+        y = self.res_encoder(x_el, context1, context2, context3)
+        z = self.res_prior_encoder(y)
+        z_hat = self.quant(z)
+        hierarchical_params = self.res_prior_decoder(z_hat)
+        temporal_params_el = self.temporal_prior_encoder(context3)
+        params = self.hybrid_temporal_layer_prior_parameters(hierarchical_params, temporal_params_el, y_bl_hat)
+        # four part prior
+        y_res, y_q, y_hat, scales_hat = self.forward_four_part_prior(
+            y, params, self.y_spatial_prior_adaptor_1, self.y_spatial_prior_adaptor_2,
+            self.y_spatial_prior_adaptor_3, self.y_spatial_prior)
+
+        recon_image_feature = self.res_decoder(y_hat, context2, context3)
+        feature, recon_image_el = self.recon_generation_net(recon_image_feature, context1)
+
+        if self.training:
+            y_for_bit = self.add_noise(y_res)
+            mv_y_for_bit = self.add_noise(mv_y_res)
+            z_for_bit = self.add_noise(z)
+            mv_z_for_bit = self.add_noise(mv_z)
+        else:
+            y_for_bit = y_q
+            mv_y_for_bit = mv_y_q
+            z_for_bit = z_hat
+            mv_z_for_bit = mv_z_hat
+        total_bits_y, _ = self.get_y_bits_probs(y_for_bit, scales_hat)
+        total_bits_mv_y, _ = self.get_y_bits_probs(mv_y_for_bit, mv_scales_hat)
+        total_bits_z, _ = self.get_z_bits_probs(z_for_bit, self.bit_estimator_z)
+        total_bits_mv_z, _ = self.get_z_bits_probs(mv_z_for_bit, self.bit_estimator_z_mv)
+        bits_el = total_bits_y + total_bits_mv_y + total_bits_z + total_bits_mv_z
+
+        dpb = {
+            'ref_frame_bl': bl_result['recon_image'],
+            'ref_feature_bl': feature_bl,
+            'ref_frame_el': recon_image_el,
+            'ref_feature_el': feature
+        }
+
+        result = {
+            "dpb": dpb,
+            "bit_bl": bits_bl.item(),
+            "bit_el": bits_el.item(),
+            "encoding_time_EL": 0.0,
+            "decoding_time_EL": 0.0,
+            "encoding_time_BL": 0.0,
+            "decoding_time_BL": 0.0,
+            "mv_hat": mv_hat,
+            "warp_frame": warp_frame
+        }
+        return result

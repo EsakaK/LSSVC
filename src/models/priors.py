@@ -374,12 +374,13 @@ class IntraNoAR(CompressionModel):
         scales_hat, means_hat = gaussian_params.chunk(2, 1)
         y_hat, y_likelihoods = self.gaussian_conditional(y, scales_hat, means=means_hat)
         x_hat = self.g_s(y_hat)
-        bit = (torch.log(y_likelihoods).sum() + torch.log(z_likelihoods).sum()) / (-math.log(2))
+        bits = (torch.log(y_likelihoods).sum() + torch.log(z_likelihoods).sum()) / (-math.log(2))
 
         pixel_num = x.shape[0] * x.shape[2] * x.shape[3]
-        bpp = bit / pixel_num
+        bpp = bits / pixel_num
         mse = torch.mean((x - x_hat).pow(2))
         return {
+            'bits': bits,
             'mse': mse,
             'bpp': bpp,
             'x_hat': x_hat,

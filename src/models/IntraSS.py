@@ -138,14 +138,10 @@ class IntraSS(CompressionModel):
         # BL forward
         # x_bl should not be compressed
         result = self.base_layer_model.get_layer_information(x_bl)
-        mse_bl = result['mse']
-        bpp_bl = result['bpp']
+        bit_bl = result['bits']
         y_hat_bl = result['y_hat']
         x_hat_bl = result['x_hat']
-        if train_with_recon:
-            x_bl_for_ctx_mining = x_hat_bl
-        else:
-            x_bl_for_ctx_mining = x_bl
+        x_bl_for_ctx_mining = x_hat_bl
         # depadded process
         x_bl_for_ctx_mining = self.get_depadded_feature(x_bl_for_ctx_mining)  # texture resample
         y_hat_bl = self.get_depadded_feature(y_hat_bl, p=16)
@@ -162,13 +158,18 @@ class IntraSS(CompressionModel):
         scales_hat, means_hat = params.chunk(2, 1)
         y_hat, y_likelihoods = self.gaussian_conditional(y, scales_hat, means=means_hat)
         res_hat = self.g_s(y_hat, context2, context3)
-        _, x_hat = self.recon_net(res_hat, context1)
+        feature, x_hat = self.recon_net(res_hat, context1)
 
-        return {
-            "x_hat": x_hat,
-            "likelihoods": {"y": y_likelihoods, "z": z_likelihoods},
-            "bl_rd": {'bpp_bl': bpp_bl, 'mse_bl': mse_bl}
+        bit_el = (torch.log(y_likelihoods).sum() + torch.log(z_likelihoods).sum()) / (-math.log(2))
+
+        result = {
+            'bit_bl': bit_bl.item(),
+            'bit_el': bit_el.item(),
+            'x_hat_bl': x_hat_bl,
+            'x_hat_el': x_hat,
+            'feature_el': feature
         }
+        return result
 
     def load_state_dict(self, state_dict):
         # Dynamically update the entropy bottleneck buffers related to the CDFs
@@ -244,6 +245,8 @@ class IntraSS(CompressionModel):
     def encode_decode(self, x_bl, x_el, bin_path_bl, bin_path_el,
                       pic_height_bl, pic_width_bl,
                       pic_height_el, pic_width_el):
+        if bin_path_bl is None:
+            return self.forward(x_bl, x_el)
         # -------------------------------Encode----------------------------
         # BL encode
         y_bl, z_bl = self.base_layer_model.get_y_z(x_bl)
