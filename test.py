@@ -209,7 +209,6 @@ def run_test(video_net, i_frame_net, args_dict, device):
             assert pic_height_BL_padded == height_BL_padded and pic_width_BL_padded == width_BL_padded \
                    and pic_height_EL_padded == height_EL_padded and pic_width_EL_padded == width_EL_padded
 
-            # H和W要好好设置，和高分辨率下对应起来
             i_frame_net.set_scale_information(scale_factor, (height_EL_padded, width_EL_padded), (0, 0, 0, 0))
             video_net.set_scale_information(scale_factor, (height_EL_padded, width_EL_padded), (0, 0, 0, 0))
             bin_path_BL = os.path.join(args_dict['bin_folder'], ratio, 'BL', f"{frame_idx}.bin") \
