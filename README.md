@@ -3,7 +3,7 @@
 Official Pytorch implementation for [LSSVC: A Learned Spatially Scalable Video Coding Scheme ](https://ieeexplore.ieee.org/document/10521480)
 
 ### News :loudspeaker:
-- We have added evaluation w/o real bitstream writing!
+- We have added the evaluation w/o real bitstream writing!
 
 
 ### Prerequisites
