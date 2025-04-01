@@ -173,6 +173,5 @@ If you find our work useful for your research, please cite:
   volume={33},
   number={},
   pages={3314-3327},
-  keywords={Video coding;Encoding;Image coding;Standards;Scalability;Spatial resolution;Static VAr compensators;Learned video coding;spatial scalability;scalable video coding;contextual MV encoder-decoder;hybrid temporal-layer context mining;interlayer prior},
   doi={10.1109/TIP.2024.3395025}}
 ```
